@@ -1,0 +1,56 @@
+name: Generate Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration variants
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          以前特别怕脏、怕病毒，后来终于熬过来了。可这句话里，其实藏着一个更值得问的问题：你真正怕的，究竟是什么？
+
+          有人碰一下门把手，就开始想：万一上面有病毒呢？
+
+          有人从狗旁边经过，明明没有明显接触，却还是会回想：万一刚才发生了什么，我没注意到呢？
+
+          于是你查资料、回忆、检查身体、问别人，直到终于有人告诉你：没事。那一刻，你确实会舒服一点。
+
+          可过一会儿，大脑又会问：可是……万一呢？然后上一轮的答案，又不够用了。
+
+          所以，也许真正值得问的已经不是：这个病毒到底在不在。
+
+          而是：为什么只要还剩下一点点不确定，我就无法继续生活？
+
+          恐艾也好，恐狂也好，怕脏、怕感染也好。它们表面害怕的东西可以完全不同，可那个非得得到百分之百确定的人，可能一直都是同一个。所以你真正要处理的，也许从来不只是病毒。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-6% --pitch=-2Hz --text "$TEXT" --write-media out/yunxi.mp3 --write-subtitles out/yunxi.srt
+          edge-tts --voice zh-CN-YunyangNeural --rate=-7% --pitch=-2Hz --text "$TEXT" --write-media out/yunyang.mp3 --write-subtitles out/yunyang.srt
+          edge-tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-3Hz --text "$TEXT" --write-media out/yunjian.mp3 --write-subtitles out/yunjian.srt || true
+          cp narration.txt out/narration.txt
+      - name: Inspect output
+        run: |
+          ls -lh out
+          python - <<'PY'
+          import os
+          for f in os.listdir('out'):
+              print(f, os.path.getsize('out/'+f))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep4-tts
+          path: out/
+          if-no-files-found: error
