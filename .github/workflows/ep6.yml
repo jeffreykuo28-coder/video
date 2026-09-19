@@ -1,0 +1,44 @@
+name: Generate EP6 Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          拿着刀、站在站台边，或者抱着孩子时，大脑突然闪过一个可怕的画面。最折磨人的，通常不是画面本身，而是下一秒：我为什么会想到这个？这是不是说明，我其实有这种倾向？
+
+          心理学里有个概念，Thought-Action Fusion，思想—行为融合。大白话就是：你把“想到”，误当成了“想做”，甚至把一个念头，当成“我是什么人”的证据。
+
+          我想再加一个工作假说，叫 Self-Model Overfitting，自我模型过拟合。这不是现成的诊断术语，而是一个可以继续验证的解释框架。
+
+          机器学习里的过拟合，是把噪声当规律。放到这里，就是本来只是大脑自动冒出的一个心理事件，你却把它当成高权重样本，不断拿它更新“我是谁”。
+
+          于是你开始检查：我有没有冲动？刚才那一瞬间是什么意思？我是不是变坏了？可每检查一次，都等于默认：这个念头值得被认真分析。
+
+          所以下次它再来，不急着证明自己。先问一句：一个自动冒出来的念头，凭什么有资格代表我？
+
+          不是消灭念头。是降低它的证据权重，然后回到你原本正在做的事。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-2% --pitch=-2Hz --text "$TEXT" --write-media out/ep6_yunxi.mp3 --write-subtitles out/ep6_yunxi.srt
+          cp narration.txt out/narration.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep6-tts
+          path: out/
+          if-no-files-found: error
