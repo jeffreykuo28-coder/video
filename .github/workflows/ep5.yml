@@ -1,0 +1,44 @@
+name: Generate EP5 Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          很多人把记忆想成录像：发生过，就应该能完整回放。可认知心理学里有个很基本的事实——记忆更接近重构，不是回放。你每回忆一次，都在用此刻的信息，重新拼一次过去。
+
+          所以反复想一件事时，会出现一个很奇怪的现象：最开始你还挺确定，想得越久，反而越会问——这个细节，是我真的记得，还是后来想出来的？
+
+          这涉及一个概念，source monitoring，来源监控。大脑要区分：这是我经历过的、听来的，还是想象出来的。
+
+          更反直觉的是，在反复检查式困扰里，研究发现，重复检查对记忆信心的损耗，往往比对记忆准确性的影响更明显。换句话说，有时候不是你越来越不会记，而是越来越不敢相信自己。
+
+          这就碰到了元认知。再往下看，又会碰到 intolerance of uncertainty，对不确定性的低耐受。你表面上有十个问题，其实都指向同一件事：我不能允许这里有一块无法验证的空白。
+
+          所以下次你又想重新想一遍，先别问“我到底记得对不对”。只问一句：我现在是在获得新的信息，还是只想把不确定感消灭掉？
+
+          这是两件完全不同的事。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-2% --pitch=-2Hz --text "$TEXT" --write-media out/ep5_yunxi.mp3 --write-subtitles out/ep5_yunxi.srt
+          cp narration.txt out/narration.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep5-tts
+          path: out/
+          if-no-files-found: error
