@@ -1,0 +1,52 @@
+name: Generate EP9 Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          你有没有发现，强迫最喜欢问的问题，看起来完全不同：门真的锁了吗？我绝对不会伤害别人吗？我百分之百爱他吗？那段记忆真的一点都没漏吗？
+
+          可从决策科学看，它们可能共享同一个结构。很多决策模型都假设：大脑会不断积累证据，直到跨过一个 decision boundary，也就是决策阈值，然后停止采样，做出行动。
+
+          OCD 研究里，一个很反常的现象是：有些人会收集更多证据、花更长时间，却仍然不容易真正停下来。
+
+          所以我想提出一个工作假说：Epistemic Halting Failure，认知停机失败。
+
+          大白话就是：不是你还没想明白，而是你把停止条件设成了一个现实世界几乎给不了你的东西——零残余不确定性。
+
+          你可以检查门锁，但无法证明未来绝不会出任何意外。你可以知道此刻爱一个人，但无法证明未来每一秒的感受。你可以回忆过去，却无法证明记忆没有遗漏任何细节。
+
+          如果停止条件是百分之百确定，那计算就没有自然终点。新的证据不会结束问题，只会制造新的可怀疑之处。
+
+          所以下次又想“再确认一下”的时候，不要问：我已经百分之百确定了吗？
+
+          换一个 stopping rule：现实中的证据，已经足够我正常行动了吗？
+
+          如果够了，剩下那个万一，可以不解决。
+
+          真正需要修改的，也许不是答案，而是你的停止条件。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-3% --pitch=-2Hz --text "$TEXT" --write-media out/ep9_yunxi.mp3 --write-subtitles out/ep9_yunxi.srt
+          cp narration.txt out/narration.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep9-tts
+          path: out/
+          if-no-files-found: error
