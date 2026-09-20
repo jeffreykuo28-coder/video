@@ -1,0 +1,54 @@
+name: Generate EP8 Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          有一种强迫很奇怪。杯子歪了三毫米，不会出事；少数一个台阶，也不会改变命运。可身体就是会告诉你：不对，再来一次。
+
+          心理学里，这类体验常被叫作 Not Just Right Experiences，简称 NJRE，也会和 incompleteness，也就是不完整感，一起讨论。它和对称、排列、数数这些强迫特别相关。
+
+          最关键的是：这类行为不一定是在防止危险。很多时候，你不是怕出事，而是受不了“还没对上”的感觉。
+
+          我想借控制论和预测加工做一个工作假说，暂时叫它“完成权劫持”。正常情况下，一个动作什么时候结束，由现实任务决定：杯子放稳了，门已经关了，楼梯已经走完了。
+
+          但在这类强迫里，停止条件像是被换掉了。现实明明已经完成，大脑却还在等一个内部信号：必须感觉刚刚好，才准停。
+
+          从预测加工的角度，可以把它理解成：大脑对一个很小的感知误差，给了过高的权重。于是“歪一点”“少一下”“顺序不对”不再只是小偏差，而像一个没有关闭的程序。
+
+          强迫动作当然有用。你摆正、重数、重来以后，那股别扭会暂时下降。也正因为它有用，大脑学会了：以后这种不对劲一出现，就必须靠动作消掉。
+
+          所以下一次，不要再问“我现在感觉对了吗？”
+
+          换一个结束标准：现实任务完成了吗？杯子能用吗？门关上了吗？路走完了吗？
+
+          如果答案是完成了，就允许那种“还差一点”的感觉继续存在，然后停手。
+
+          你真正要重新训练的，不是整齐不整齐。
+
+          而是谁有权宣布：这件事已经完成。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-2% --pitch=-2Hz --text "$TEXT" --write-media out/ep8_yunxi.mp3 --write-subtitles out/ep8_yunxi.srt
+          cp narration.txt out/narration.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep8-tts
+          path: out/
+          if-no-files-found: error
