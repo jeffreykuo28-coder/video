@@ -1,0 +1,58 @@
+name: Generate EP7 Chinese TTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Edge TTS
+        run: pip install edge-tts
+      - name: Generate narration
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > narration.txt <<'EOF'
+          有一种强迫，很容易被误认为是“道德感太强”。
+
+          你做完一件事，会反复想：我刚才是不是伤害了别人？我是不是不够善良？我为什么会冒出这种念头？
+
+          临床心理学里，这类现象常被放在 scrupulosity，也就是道德或宗教强迫的框架下讨论。2025 年的研究发现，这类人尤其容易高估念头的重要性，也更容易出现 moral thought-action fusion——把“想到坏事”，和“我在道德上有问题”混在一起。
+
+          但我想借一个系统科学里的概念，再往前推一步。
+
+          Goodhart's Law：一个指标一旦变成目标，它就会开始失真。
+
+          如果“我是个好人”变成了你必须随时证明的目标，你的大脑就会疯狂寻找代理指标：我有没有坏念头？我有没有足够内疚？我有没有道歉彻底？我能不能百分之百确定自己没做错？
+
+          问题是，你越优化这些指标，它们就越不像真正的道德。
+
+          所以我把它叫作：Moral Proxy Trap，道德代理指标陷阱。
+
+          大白话就是：你本来想成为一个好人，后来却变成了不停检查“我像不像一个好人”。
+
+          下次再陷进去，不要继续问“我到底是不是好人”。
+
+          换一个问题：此刻，什么行为更符合我真正看重的价值？
+
+          然后去做那件事，允许心里还留一点不确定。
+
+          道德不是一种可以被证明的内在纯度。
+
+          它更像是：在不确定里，你一次次选择怎么行动。
+          EOF
+          TEXT=$(cat narration.txt)
+          edge-tts --voice zh-CN-YunxiNeural --rate=-2% --pitch=-2Hz --text "$TEXT" --write-media out/ep7_yunxi.mp3 --write-subtitles out/ep7_yunxi.srt
+          cp narration.txt out/narration.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ep7-tts
+          path: out/
+          if-no-files-found: error
